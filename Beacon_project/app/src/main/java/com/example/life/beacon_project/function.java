@@ -13,4 +13,6 @@ public class function {
         if (networkInfo != null && networkInfo.isConnected()) {return true;}
         return false;
     }
+
+
 }

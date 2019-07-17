@@ -15,11 +15,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,6 +60,10 @@ public class MainActivity extends AppCompatActivity {
     TextView distance_textview3,rssi_textview3,check_textview3;
     TextView mac_textview,pass_check_textview;
     BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    SensorManager mSersorManager;
+    Sensor mAccrlerometers;
+    Sensor mGyroscope;
+    Sensor mMagnetometer;
 
 
     //**這是scan傳統藍芽的handler 每三秒掃一次
@@ -63,7 +75,8 @@ public class MainActivity extends AppCompatActivity {
         {
             registerReceiver(receiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
             mBluetoothAdapter.startDiscovery();
-            handler.postDelayed(this, 3000);
+            Sensor_function();
+            handler.postDelayed(this, 5000);
         }
     };
 
@@ -85,8 +98,10 @@ public class MainActivity extends AppCompatActivity {
         pass_check_textview  = findViewById(R.id.pass_check_textview);
 
         startHandleLoop();////開啟掃描傳統藍芽的handler
-
-
+        mSersorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        mAccrlerometers = mSersorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mGyroscope = mSersorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        mMagnetometer = mSersorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         if (mBluetoothAdapter == null)
         { Log.d(TAG,"設備不支持藍牙"); }
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
@@ -187,6 +202,9 @@ public class MainActivity extends AppCompatActivity {
             bluetoothLeScanner.stopScan(scallback); //停止
         }
     }
+
+
+
     public class SampleScanCallback extends ScanCallback {
 
         @Override
@@ -423,6 +441,76 @@ public class MainActivity extends AppCompatActivity {
             pass_check_textview.setText("No Network");
         }
     }
+
+    public void Sensor_function()
+    {
+        //從系統服務中獲得感測器管理器
+        SensorManager sm = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+        // 從感測器管理器中獲得全部的感測器列表
+        List<Sensor> allSensors = sm.getSensorList(Sensor.TYPE_ALL);
+        // 顯示有多少個感測器
+        Log.d(TAG,"經檢測該手機有" + allSensors.size() + "個感測器，他們分別是：");
+
+        for (Sensor s : allSensors)
+        {
+            switch (s.getType())
+            {
+                case Sensor.TYPE_ACCELEROMETER:
+                    Log.d(TAG,"加速度感測器:");
+                    mSersorManager.registerListener(accelerometerListener, s, SensorManager.SENSOR_DELAY_NORMAL);
+
+                    break;
+                case Sensor.TYPE_GYROSCOPE:
+                    Log.d(TAG, "陀螺儀感測器:");
+                    mSersorManager.registerListener(accelerometerListener,mGyroscope,SensorManager.SENSOR_DELAY_NORMAL);
+                    break;
+                case Sensor.TYPE_LIGHT:
+                    //Log.d(TAG, s.getType()+ " 環境光線感測器light");
+                    break;
+                case Sensor.TYPE_MAGNETIC_FIELD:
+                    //Log.d(TAG, s.getType()+ " 電磁場感測器magnetic field");
+                    break;
+                case Sensor.TYPE_PRESSURE:
+                    //Log.d(TAG, s.getType()+ " 壓力感測器pressure");
+                    break;
+                case Sensor.TYPE_PROXIMITY:
+                    //Log.d(TAG, s.getType()+ " 距離感測器proximity");
+                    break;
+                default:
+                    //Log.d(TAG, s.getType()+ " 未知的手機sensor");
+                    break;
+            }
+        }
+    }
+    private SensorEventListener accelerometerListener = new SensorEventListener(){
+
+        @Override
+        public void onAccuracyChanged(Sensor arg0, int arg1) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            // TODO Auto-generated method stub
+            switch(event.sensor.getType())
+            {
+                case Sensor.TYPE_ACCELEROMETER:
+//                    Log.d(TAG,"加速度感測器的數值: X: " + String.valueOf(event.values[0])+"\t"
+//                            +"Y: " + String.valueOf(event.values[1])+"\t"
+//                            +"Z: " + String.valueOf(event.values[2]));
+                    break;
+                case Sensor.TYPE_GYROSCOPE:
+                    Log.d(TAG,"陀螺儀感測器的數值: X: " + String.valueOf(event.values[0])+"\t"
+                            +"Y: " + String.valueOf(event.values[1])+"\t"
+                            +"Z: " + String.valueOf(event.values[2]));
+                    break;
+                default:
+
+            }
+
+        }};
 }
 
 
