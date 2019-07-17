@@ -1,6 +1,6 @@
 package com.example.life.beacon_project;
 
-import android.Manifest;
+
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -10,56 +10,33 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
-import android.os.ParcelUuid;
-import android.provider.SyncStateContract;
-import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.DoubleUnaryOperator;
 
 public class MainActivity extends AppCompatActivity {
 
     Context context;
     private final static int REQUEST_ENABLE_BT = 1;
-    String TAG = "MainActivity";
-    String TAG_bluetooth = "bluetooth";
-    Double total_rssi_5C313E310285=0.0,total_rssi_7CEC796F4764=0.0,total_rssi_A81B6AB30F67=0.0;
-    ArrayList<Double> average_rssi_5C313E310285 = new ArrayList<>();
-    ArrayList<Double> average_rssi_7CEC796F4764 = new ArrayList<>();
-    ArrayList<Double> average_rssi_A81B6AB30F67 = new ArrayList<>();
-    ArrayList<Double> average_rssi_D9D082EBDC69 = new ArrayList<>();
-    Boolean go_to_adslab_bool=false;
-    int record_7CEC796F4764=0;int record_A81B6AB30F67=0;int record_average_rssi_D9D082EBDC69=0;
+    String TAG = "Bluetooth_TAG";
+    ArrayList<Double> average_rssi_30AEA40894C2 = new ArrayList<>();
+    ArrayList<Double> average_rssi_30AEA40891BA = new ArrayList<>();
+    ArrayList<Short> average_rssi_AAAAAAAAAA = new ArrayList<>();
 
-    //Double[] data = {-69.0, -72.0, -71.0 , -64.0, -68.0};
+//    Boolean go_to_adslab_bool=false;
     Double mean,sigma;//平均數、標準差
     float threshold = 0.2f;//閥值
     int weight=2;//時間權重
@@ -67,40 +44,49 @@ public class MainActivity extends AppCompatActivity {
     int txpower = -70;//bluetooth txpower
     Double distance=0.0;
     String move_state="";
-    ArrayList<Double> array_data = new ArrayList<>();
     ArrayList<Double> distance_arraylist = new ArrayList<>();
+    ArrayList<Double> distance_arraylist2 = new ArrayList<>();
+    ArrayList<Double> distance_arraylist3 = new ArrayList<>();
     TextView distance_textview,rssi_textview,check_textview;
+    TextView distance_textview2,rssi_textview2,check_textview2;
+    TextView distance_textview3,rssi_textview3,check_textview3;
+    TextView mac_textview,pass_check_textview;
+    BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+
+    //**這是scan傳統藍芽的handler 每三秒掃一次
+    private Handler handler = new Handler();
+    private Runnable runnable = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            registerReceiver(receiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+            mBluetoothAdapter.startDiscovery();
+            handler.postDelayed(this, 3000);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        distance_textview = findViewById(R.id.distance_textview);
-        rssi_textview = findViewById(R.id.rssi_textview);
-        check_textview = findViewById(R.id.check_textview);
-//        //把資料加進去
-//        for(int i=0;i<data.length;i++)
-//        { array_data.add(data[i]); }
-//        //算出平均數
-//        mean = fun_mean(array_data);
-//        Log.e(TAG_bluetooth,"mean="+mean);
-//        //計算標準差
-//        sigma = fun_sigma(array_data,mean);
-//        Log.e(TAG_bluetooth,"sigma="+sigma);
-//        //高斯濾波
-//        fun_Gaussian_blur(array_data,mean,sigma);
-//        fun_time_of_weight(array_data);
-//        move_state = fun_away_or_close(array_data);
-//        distance = fun_distance(array_data);
-//
-//        for(int i=0;i<array_data.size();i++)
-//        {
-//            Log.e(TAG_bluetooth,"distance("+i+")="+array_data.get(i));
-//        }
-//        Log.e(TAG_bluetooth,"move_state="+move_state+",distance = "+distance);
+        distance_textview   = findViewById(R.id.distance_textview);
+        rssi_textview       = findViewById(R.id.rssi_textview);
+        check_textview      = findViewById(R.id.check_textview);
+        distance_textview2  = findViewById(R.id.distance_textview2);
+        rssi_textview2      = findViewById(R.id.rssi_textview2);
+        check_textview2     = findViewById(R.id.check_textview2);
+        distance_textview3  = findViewById(R.id.distance_textview3);
+        rssi_textview3      = findViewById(R.id.rssi_textview3);
+        check_textview3     = findViewById(R.id.check_textview3);
+        mac_textview        = findViewById(R.id.mac_textview);
+        pass_check_textview  = findViewById(R.id.pass_check_textview);
 
-        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        startHandleLoop();////開啟掃描傳統藍芽的handler
+
+
         if (mBluetoothAdapter == null)
         { Log.d(TAG,"設備不支持藍牙"); }
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
@@ -120,7 +106,41 @@ public class MainActivity extends AppCompatActivity {
             Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBluetooth, REQUEST_ENABLE_BT);
         }else{scaniDevice(true);}
+
     }
+    private void startHandleLoop()
+    {handler.postDelayed(runnable, 1000);}
+
+    private final BroadcastReceiver receiver = new BroadcastReceiver()
+    {
+        public void onReceive(Context context, Intent intent)
+        {
+            String action = intent.getAction();
+            if(BluetoothDevice.ACTION_FOUND.equals(action))
+            {
+                Short rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI,Short.MIN_VALUE);
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                String name = device.getAddress();
+                if(name.contains("AA:AA:AA:AA:AA:AA"))
+                {
+                    average_rssi_AAAAAAAAAA.add(rssi);
+                    Double d_rssi = Double.valueOf(rssi);//這裡收到的rssi值是short，但passdata的參數是double，所以要記得轉換
+                    PassData(d_rssi,3);
+                    check_textview3.setText("mac=AA:AA:AA:AA:AA:AA");
+                    rssi_textview3.setText("rssi="+average_rssi_AAAAAAAAAA);
+                    distance_textview3.setText("distance="+distance+"m");
+                    distance_arraylist3.add(distance);
+                    fun_remove_arraylist2(average_rssi_AAAAAAAAAA);
+                }
+            } else
+            {
+                check_textview3.setText("BluetoothDevice.action_Found not found");
+                rssi_textview3.setText("BluetoothDevice.action_Found not found");
+                distance_textview3.setText("BluetoothDevice.action_Found not found");
+            }
+
+        }
+    };
     //然而你如果想下載完這個開源項目就想運行看效果，
     // 伙計，不得不說你是絕對不會成功的，
     // buildScanFilters裡面添加了掃描過濾規則，
@@ -182,104 +202,44 @@ public class MainActivity extends AppCompatActivity {
             for(ScanResult scanResult : results)
             {
                 Double rssi = Double.valueOf(scanResult.getRssi());
+                mac_textview.setText(scanResult.getDevice().getAddress());//顯示掃描出來的所有device的mac address
                 switch (scanResult.getDevice().getAddress())
                 {
-                    case "5C:31:3E:31:02:85":
-                        average_rssi_5C313E310285.add(rssi);t=true;break;
-                    case "7C:EC:79:6F:47:64":
-                        average_rssi_7CEC796F4764.add(rssi);t=true;record_7CEC796F4764++;break;
-                    case "A8:1B:6A:B3:0F:67":
-                        average_rssi_A81B6AB30F67.add(rssi);
-                        //Log.e(TAG_bluetooth,"rssi = "+rssi);
-                        t=true;record_A81B6AB30F67++;break;
-                    /*case "D9:D0:82:EB:DC:69":
-                        average_rssi_D9D082EBDC69.add(rssi);
-                        t=true;break;*/
-                    case "A4:34:F1:8A:1D:B0":
-                        average_rssi_D9D082EBDC69.add(rssi);
-                        t=true;break;
+                    case "30:AE:A4:08:94:C2":
+                        average_rssi_30AEA40894C2.add(rssi);t=true;
+                        check_textview.setText("mac=30:AE:A4:08:94:C2");
+                        PassData(rssi,1);
+                        break;
+                    case "30:AE:A4:08:91:BA":
+                        average_rssi_30AEA40891BA.add(rssi);t=true;
+                        check_textview2.setText("mac=30:AE:A4:08:91:BA");
+                        PassData(rssi,2);
+                        break;
                     default:
                         //Log.d(TAG,"不是我們的bluetooth");
                 }
             }
             if(t)
             {
-                  //**mac=5C313E310285的bluetooth**//
-//                for(int i=0;i<average_rssi_5C313E310285.size();i++)
-//                {total_rssi_5C313E310285 +=average_rssi_5C313E310285.get(i); }
-//                total_rssi_5C313E310285 = total_rssi_5C313E310285/average_rssi_5C313E310285.size();
-//                distance = Math.pow(10,(Math.abs(total_rssi_5C313E310285)-127)/(10*n));
-//                Log.d(TAG,"total_rssi_5C313E310285 = "+total_rssi_5C313E310285+",distance_5C313E310285 = "+distance);
-//                total_rssi_5C313E310285 = 0.0;
-//                if(average_rssi_5C313E310285.size()>10)
-//                {average_rssi_5C313E310285.clear();}
-                  //**mac=5C313E310285的bluetooth**//
+                //**30AEA40894C2 Beacon的**//
+                if(average_rssi_30AEA40894C2.size()!=0)
+                {
+                    rssi_textview.setText("rssi="+average_rssi_30AEA40894C2);//先秀出收到的rssi數據
+                    fun_mean_and_sigma(average_rssi_30AEA40894C2);//算出平均數及標準差，進行高斯模糊，最後透過公式轉換出距離
+                    distance_textview.setText("distance="+distance+"m");//秀出距離
+                    distance_arraylist.add(distance);//加到一個arraylist
+                    fun_remove_arraylist(average_rssi_30AEA40894C2);//讓arraylist裡的rssi維持只有六個，讓計算的數據是最近的六筆
+                }
 
-//                if(average_rssi_7CEC796F4764.size()>=100)
-//                {
-//                    for(int i=0;i<average_rssi_7CEC796F4764.size();i++)
-//                    {
-//                        //Log.e(TAG_7CEC796F4764,"average_rssi_7CEC796F4764.get("+i+") = "+average_rssi_7CEC796F4764.get(i));//秀出每一筆
-//                        total_rssi_7CEC796F4764 +=average_rssi_7CEC796F4764.get(i);//全部加起來
-//                    }
-//                    total_rssi_7CEC796F4764 = total_rssi_7CEC796F4764/average_rssi_7CEC796F4764.size();//算出平均數
-//                    Log.e(TAG_bluetooth,"record_7CEC796F4764 = "+record_7CEC796F4764);
-//                    Log.e(TAG_bluetooth,"total_rssi_7CEC796F4764 = "+total_rssi_7CEC796F4764);
-//                    average_rssi_7CEC796F4764.clear();total_rssi_7CEC796F4764=0.0;
-//                    Log.e(TAG_bluetooth,"刪除100筆7CEC796F4764");
-//                }
-
-
-//                array_data = new ArrayList(average_rssi_A81B6AB30F67);
-//                rssi_textview.setText("rssi[]="+array_data);
-//                fun_mean_and_sigma(array_data);
-//                distance_textview.setText("distance="+distance+"m");
-//                if(distance<2)
-//                {
-//                    if(!go_to_adslab_bool)//false
-//                    {
-//                        go_to_adslab_bool=true;
-//                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-//                        builder.setTitle("感測到ADS實驗室在這附近");
-//                        builder.setMessage("是否查看相關訊息?");
-//                        builder.setPositiveButton("前往", new DialogInterface.OnClickListener() {
-//                            @Override
-//                            public void onClick(DialogInterface dialog, int which) {
-//                                Intent go_intent = new Intent(MainActivity.this,adslab_activity.class);
-//                                startActivity(go_intent);
-//                            }
-//                        });
-//                        builder.setNegativeButton("不了", new DialogInterface.OnClickListener() {
-//                            @Override
-//                            public void onClick(DialogInterface dialog, int which) { }
-//                        });
-//                        AlertDialog dialog=builder.create();
-//                        dialog.show();
-//                    }
-//                }
-//                if(distance>5)
-//                {
-//                    go_to_adslab_bool=false;
-//                }
-//                //Log.e(TAG_bluetooth,distance+"");
-//                distance_arraylist.add(distance);
-//                if(distance_arraylist.size()>=100)
-//                {
-//                    Log.e(TAG_bluetooth,distance_arraylist+"");
-//                    distance_arraylist.clear();
-//                    check_textview.setText("get it");
-//                }
-//                fun_remove_arraylist(average_rssi_A81B6AB30F67);
-
-
-                //**D9D082EBDC69 Beacon的**//
-                array_data = new ArrayList(average_rssi_D9D082EBDC69);
-                rssi_textview.setText("rssi[]="+array_data);
-                fun_mean_and_sigma(array_data);
-                distance_textview.setText("distance="+distance+"m");
-                distance_arraylist.add(distance);
-                fun_remove_arraylist(average_rssi_D9D082EBDC69);
-
+                //**30AEA40891BA Beacon的**//
+                if(average_rssi_30AEA40891BA.size()!=0)
+                {
+                    rssi_textview2.setText("rssi="+average_rssi_30AEA40891BA);//先秀出收到的rssi數據
+                    fun_mean_and_sigma(average_rssi_30AEA40891BA);//算出平均數及標準差，進行高斯模糊，最後透過公式轉換出距離
+                    distance_textview2.setText("distance="+distance+"m");//秀出距離
+                    distance_arraylist2.add(distance);//加到一個arraylist
+                    fun_remove_arraylist(average_rssi_30AEA40891BA);//讓arraylist裡的rssi維持只有六個，讓計算的數據是最近的六筆
+                }
             }
         }
 
@@ -316,14 +276,13 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                     }
-
                 }).start();
             }
             Log.d(TAG,"onScanFailed 出去");
         }
     }
 
-    public void fun_mean_and_sigma(ArrayList<Double> data)
+    public void fun_mean_and_sigma(ArrayList<Double> data)//算出平均數與標準差
     {
         Double sum=0.0;Double fun_mean=0.0;
         for(int i=0;i<data.size();i++)
@@ -346,18 +305,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
-    public void fun_Gaussian_blur_and_time_of_weight(ArrayList<Double> data,Double mean,Double sigma)
+    public void fun_Gaussian_blur_and_time_of_weight(ArrayList<Double> data,Double mean,Double sigma)//高斯模糊
     {
-//        int mid_size = data.size()/2;
-//        for(int i=0;i<data.size();i++){
-//            if(i<mid_size) {
-//                data.set(i,data.get(i)*Math.exp(-Math.pow(data.get(i)-mean,2)/(2*Math.pow(sigma,2)))/(Math.sqrt(2*Math.PI)*sigma)*weight);
-//            }
-//            else {
-//                data.set(i,data.get(i)*Math.exp(-Math.pow(data.get(i)-mean,2)/(2*Math.pow(sigma,2)))/(Math.sqrt(2*Math.PI)*sigma));
-//            }
-//        }
-//        fun_distance(data);
         ArrayList<Double> gussir = new ArrayList<>();Double g_mean=0.0;
         for(int i=0;i<data.size();i++)
         {
@@ -365,8 +314,8 @@ public class MainActivity extends AppCompatActivity {
             g_mean += gussir.get(i);
         }
         g_mean = g_mean/gussir.size();
-        Double gussir_max  = Collections.max(gussir);
-        Double gussir_min  = Collections.min(gussir);
+        Double gussir_max  = Collections.max(gussir);//取max
+        Double gussir_min  = Collections.min(gussir);//取min
         Double present = (gussir_max-gussir_min)/100;
         Double g_little_max = g_mean+present*20;
         Double g_little_min = g_mean-present*20;
@@ -393,8 +342,8 @@ public class MainActivity extends AppCompatActivity {
             fun_distance(new_data_mean);
         }
     }
-//    public void fun_away_or_close(ArrayList<Double> data)
-//    {
+    public void fun_away_or_close(ArrayList<Double> data)//偵測遠離靠近
+    {
 //        Double little_max = Collections.max(data)-threshold;
 //        Double little_min = Collections.min(data)+threshold;
 //        int little_max_size=0,little_min_size=0;
@@ -417,14 +366,15 @@ public class MainActivity extends AppCompatActivity {
 //        }else{
 //            move_state = "無法偵測有無遠離或靠近";fun_distance(data);
 //        }
-//    }
+    }
 
-    public void fun_distance(Double data)
+    public void fun_distance(Double data)//將rssi值套入公式轉成距離(m)
     {
-        distance=0.0;
+        distance = 0.0;
         distance = Math.pow(10,Math.abs(data-txpower)/(10*n));
     }
-    public void fun_remove_arraylist(ArrayList<Double> data)
+
+    public void fun_remove_arraylist(ArrayList<Double> data)//將data這個arraylist保持在5個元素，多出來就刪掉
     {
         if(data.size()>5)
         {
@@ -433,6 +383,46 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void fun_remove_arraylist2(ArrayList<Short> data)///將data這個arraylist保持在5個元素，多出來就刪掉
+    {
+        if(data.size()>5)
+        {
+            data.remove(0);
+            fun_remove_arraylist2(data);
+        }
+    }
+
+    public void PassData(Double rssi_data,int id)
+    {
+        String url;
+        Task task;
+        if (function.isConnected(MainActivity.this))
+        {
+            switch(id)
+            {
+                case 1:
+                    url = "http://120.101.4.52/rssipost.php?C2rssi="+rssi_data;
+                    task = new Task();
+                    task.execute(url);
+                    break;
+                case 2:
+                    url = "http://120.101.4.52/rssipost.php?BArssi="+rssi_data;
+                    task = new Task();
+                    task.execute(url);
+                    break;
+                case 3:
+                    url = "http://120.101.4.52/rssipost.php?AArssi="+rssi_data;
+                    task = new Task();
+                    task.execute(url);
+                    break;
+                default:
+                    //nothing
+            }
+            pass_check_textview.setText("Pass data good");
+        }else{
+            pass_check_textview.setText("No Network");
+        }
+    }
 }
 
 
