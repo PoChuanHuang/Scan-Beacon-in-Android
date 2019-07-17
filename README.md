@@ -211,7 +211,7 @@ public void fun_distance(Double data)//將rssi值套入公式轉成距離(m)
 ```
 <h2>最後，將數據上傳server</h2>
 
-And I update rssi value to server,I use xampp and the database is mysql.
+最後，我將數據上傳至server的database，並採用mysql，利用[php檔](https://github.com/PoChuanHuang/Scan-Beacon-in-Android/blob/master/php/rssipost.php)將數據上傳。
 ```gherkin=
 public void PassData(Double rssi_data,int id)
     {
