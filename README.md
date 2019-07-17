@@ -222,17 +222,17 @@ public void PassData(Double rssi_data,int id)
             switch(id)
             {
                 case 1:
-                    url = "http://120.101.4.52/rssipost.php?C2rssi="+rssi_data;
+                    url = "http://(自行設定IP)/rssipost.php?C2rssi="+rssi_data;
                     task = new Task();
                     task.execute(url);
                     break;
                 case 2:
-                    url = "http://120.101.4.52/rssipost.php?BArssi="+rssi_data;
+                    url = "http://(自行設定IP)/rssipost.php?BArssi="+rssi_data;
                     task = new Task();
                     task.execute(url);
                     break;
                 case 3:
-                    url = "http://120.101.4.52/rssipost.php?AArssi="+rssi_data;
+                    url = "http://(自行設定IP)/rssipost.php?AArssi="+rssi_data;
                     task = new Task();
                     task.execute(url);
                     break;
