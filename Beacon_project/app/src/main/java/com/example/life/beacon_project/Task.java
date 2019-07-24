@@ -10,9 +10,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class Task extends AsyncTask<String,Void,Void> {
-    String TAG = "Task";
+    String TAG = "Task_log";
     @Override
-    protected Void doInBackground(String...params) {
+    protected Void doInBackground(String...params)
+    {
         // 執行中，在背景做任務
         BufferedReader bufferedReader = null;
         StringBuilder stringBuilder;
@@ -32,7 +33,7 @@ public class Task extends AsyncTask<String,Void,Void> {
             while ((line = bufferedReader.readLine()) != null)
             {stringBuilder.append(line + "\n");}
 
-        } catch (Exception e) {e.printStackTrace();}
+        } catch (Exception e) {e.printStackTrace();Log.d(TAG,"Network connect failed!");}
         finally {if (bufferedReader != null) {try {bufferedReader.close();} catch (IOException e) {e.printStackTrace();}}}
         return null;
     }

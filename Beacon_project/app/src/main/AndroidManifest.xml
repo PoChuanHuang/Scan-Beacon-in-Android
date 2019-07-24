@@ -3,17 +3,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.life.beacon_project">
 
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />//<!--網路權限-->
+    <uses-permission android:name="android.permission.BLUETOOTH" /> //<!--藍芽權限-->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />//<!--藍芽權限-->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /><!--定位權限-->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /><!--定位權限-->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/><!--声明应用只为具有蓝牙的设备提供-->
     <uses-feature android:name="android.bluetooth_le" android:required="true"/><!--声明应用只为具有蓝牙的设备提供-->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-feature android:name="android.hardware.location.network"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /><!--service前台權限-->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/><!--存取wifi狀態權限-->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -28,7 +26,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".adslab_activity"></activity>
+        <service android:name=".MyService" android:enabled="true" />
     </application>
 
 </manifest>
