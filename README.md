@@ -68,12 +68,10 @@ public void onRequestPermissionsResult(int requestCode, @NonNull String[] permis
 ![](https://i.imgur.com/2EZL4fS.jpg)
 
 開啟權限後，應彈出視窗告知使用者「是否同意開啟手機收集資訊功能並上傳本實驗研究之伺服器」
-<li>自動開啟</li>
-
-程式碼要放在Activity的生命週期的onResume()
-<li>手動開啟</li>
-
-設定一個button來讓同意視窗手動彈出，
+* **<h4>自動開啟</h4>**
+    * 程式碼要放在Activity的生命週期的onResume()
+* **<h4>手動開啟</h4>**
+    * 設定一個button來讓同意視窗手動彈出
 
 ```gherkin=
 if(mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled())//檢查是否開啟藍芽
