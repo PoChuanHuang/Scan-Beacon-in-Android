@@ -162,7 +162,7 @@ if(t)//製作這個bool的用意是 上面的掃瞄結果，要掃到指定的ma
     }
 }
 ```
-<h2>Scan the Classic Bluetooth</h2>
+<h3>傳統藍芽</h3>
 
 剛剛是BLE協定的掃瞄，現在這個是傳統藍芽協定的掃瞄。
 因為要一直掃描，所以我用runnable的方式進行重複掃描(每五秒掃一次)
@@ -210,7 +210,7 @@ private final BroadcastReceiver receiver = new BroadcastReceiver()
     }
 };
 ```
-<h2>轉換距離公式</h2>
+<h3>轉換距離公式</h3>
 
 fun_mean_and_sigma()是將現有的arraylist算其平均數與標準差
 若標準差為0，代表該arraylist的數值都一樣，就可直接取其平均數轉換成距離
@@ -284,45 +284,101 @@ public void fun_Gaussian_blur_and_time_of_weight(ArrayList<Double> data,Double m
 
 
 將處理好的數值取其最平均後，透過公式轉換成距離(單位:m)
+```gherkin=
+public void fun_distance(Double data)//將rssi值套入公式轉成距離(m)
+{
+    distance = 0.0;
+    distance = Math.pow(10,Math.abs(data-txpower)/(10*n));
+}
+```
 若arraylist的數值大於5筆了，則刪除第一筆
 ```gherkin=
-
+public void fun_remove_arraylist(ArrayList<Double> data)//將data這個arraylist保持在5個元素，多出來就刪掉
+{
+    if(data.size()>5)
+    {
+        data.remove(0);
+        fun_remove_arraylist(data);
+    }
+}
 ```
-<h2>最後，將數據上傳server</h2>
+
+<h3>感測器數據</h3>
+
+在onCreate()利用SensorManager偵測加速度與陀螺儀感測器，並進行監聽，取其資訊
+
+```gherkin=
+mSersorManager = (SensorManager) getSystemService(SENSOR_SERVICE);//從系統服務中獲得感測器管理器
+mAccrlerometers = mSersorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);//管理器取得加速度感測器
+mGyroscope = mSersorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);//管理器取得陀螺儀感測器
+
+//SENSOR_DELAY_UI適合在UI空間中獲得數據，為四種模式裡更新速度最慢的了
+//SensorManager_SENSOR_DELAY_FASTEST： 以最快的速度獲得感測器數據
+//SENSOR_DELAY_GAME： 適合遊戲模式去獲得感測器數據
+//SENSOR_DELAY_NORMAL： 以一般的速度獲得感測器數據
+//SENSOR_DELAY_UI ：適合在UI空間中獲得感測器數據
+
+mSersorManager.registerListener(accelerometerListener, mAccrlerometers, SensorManager.SENSOR_DELAY_UI);//對加速度感測器進行監聽
+mSersorManager.registerListener(accelerometerListener, mGyroscope, SensorManager.SENSOR_DELAY_UI);//對陀螺儀感測器進行監聽
+
+private SensorEventListener accelerometerListener = new SensorEventListener(){
+@Override
+public void onAccuracyChanged(Sensor arg0, int arg1) {}
+//第一個值(values[0])代表手機的水平旋轉
+//第二個值(values[1])代表手機的前後翻轉
+//第三個值(values[2])代表手機的左右翻轉
+//分别表示x,y,z轴的旋转的角速度
+@Override
+public void onSensorChanged(SensorEvent event) 
+{
+    switch(event.sensor.getType())
+    {
+        case Sensor.TYPE_ACCELEROMETER:
+            Log.d(TAG2,"加速度感測器的數值: X: " + String.valueOf(event.values[0])+"\t"
+                    +"Y: " + String.valueOf(event.values[1])+"\t"
+                    +"Z: " + String.valueOf(event.values[2]));
+
+            break;
+        case Sensor.TYPE_GYROSCOPE:
+            Log.d(TAG2,"陀螺儀感測器的數值: X: " + String.valueOf(event.values[0])+"\t"
+                    +"Y: " + String.valueOf(event.values[1])+"\t"
+                    +"Z: " + String.valueOf(event.values[2]));
+            break;
+        default:
+    }
+}};
+```
+<h3>最後，將數據上傳server</h3>
 
 最後，我將數據上傳至server的database，並採用mysql，利用[php檔](https://github.com/PoChuanHuang/Scan-Beacon-in-Android/blob/master/php/rssipost.php)將數據上傳。
+這段code寫在function.java
+「https://adslab.tk」是架在adslab最前面那台，用xampp架設。
 ```gherkin=
-public void PassData(Double rssi_data,int id)
+public static void PassData(Double rssi_data, int id)
+{
+    String url;
+    Task task;
+    switch(id)
     {
-        String url;
-        Task task;
-        if (function.isConnected(MainActivity.this))
-        {
-            switch(id)
-            {
-                case 1:
-                    url = "http://(自行設定IP)/rssipost.php?C2rssi="+rssi_data;
-                    task = new Task();
-                    task.execute(url);
-                    break;
-                case 2:
-                    url = "http://(自行設定IP)/rssipost.php?BArssi="+rssi_data;
-                    task = new Task();
-                    task.execute(url);
-                    break;
-                case 3:
-                    url = "http://(自行設定IP)/rssipost.php?AArssi="+rssi_data;
-                    task = new Task();
-                    task.execute(url);
-                    break;
-                default:
-                    //nothing
-            }
-            pass_check_textview.setText("Pass data good");
-        }else{
-            pass_check_textview.setText("No Network");
-        }
+        case 1:
+            url = "https://adslab.tk/rssipost.php?C2rssi="+rssi_data;
+            task = new Task();
+            task.execute(url);
+            break;
+        case 2:
+            url = "https://adslab.tk/rssipost.php?BArssi="+rssi_data;
+            task = new Task();
+            task.execute(url);
+            break;
+        case 3:
+            url = "https://adslab.tk/rssipost.php?AArssi="+rssi_data;
+            task = new Task();
+            task.execute(url);
+            break;
+        default:
+            //nothing
     }
+}
 ```
 
 謝謝~
