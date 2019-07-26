@@ -65,7 +65,6 @@ public void onRequestPermissionsResult(int requestCode, @NonNull String[] permis
 }
 ```
 <h3>同意視窗</h3>
-![](https://i.imgur.com/2EZL4fS.jpg)
 
 開啟權限後，應彈出視窗告知使用者「是否同意開啟手機收集資訊功能並上傳本實驗研究之伺服器」
 * **<h4>自動開啟</h4>**
