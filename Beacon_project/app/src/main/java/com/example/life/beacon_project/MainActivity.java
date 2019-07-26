@@ -159,7 +159,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume()
     {
-        Log.d(TAG, "================Activity onResume================");
+        Log.d(TAG, "================Activity onResume123================");
+		
         if(mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled())//檢查是否開啟藍芽
         {
             Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
